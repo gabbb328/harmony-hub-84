@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Heart, Share2, MoreHorizontal, Sparkles } from "lucide-react";
+import { X, Heart, Share2, MoreHorizontal, Sparkles, BarChart3 } from "lucide-react";
+import { Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, Repeat1 } from "lucide-react";
 import WaveformProgress from "./WaveformProgress";
+import VisualizerCanvas from "./VisualizerCanvas";
 import { formatTime } from "@/lib/mock-data";
 import type { usePlayerStore } from "@/hooks/usePlayerStore";
-import { Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, Repeat1 } from "lucide-react";
 
 type NowPlayingProps = ReturnType<typeof usePlayerStore> & {
   onClose: () => void;
@@ -11,6 +13,7 @@ type NowPlayingProps = ReturnType<typeof usePlayerStore> & {
 
 export default function NowPlayingView(props: NowPlayingProps) {
   const { currentTrack, isPlaying, progress, toggle, setProgress, nextTrack, prevTrack, shuffle, repeat, toggleShuffle, toggleRepeat, onClose } = props;
+  const [showVisualizer, setShowVisualizer] = useState(false);
 
   if (!currentTrack) return null;
 
@@ -34,11 +37,7 @@ export default function NowPlayingView(props: NowPlayingProps) {
           transition={{ duration: 0.8 }}
           className="absolute inset-0"
         >
-          <img
-            src={currentTrack.cover}
-            alt=""
-            className="w-full h-full object-cover"
-          />
+          <img src={currentTrack.cover} alt="" className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-background/80 backdrop-blur-[80px]" />
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-background/30" />
         </motion.div>
@@ -46,80 +45,63 @@ export default function NowPlayingView(props: NowPlayingProps) {
 
       {/* Header */}
       <div className="relative flex items-center justify-between px-6 py-4 z-10">
-        <motion.button
-          onClick={onClose}
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          className="p-2 rounded-full text-foreground/70 hover:text-foreground hover:bg-foreground/10 transition-colors"
-        >
+        <motion.button onClick={onClose} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
+          className="p-2 rounded-full text-foreground/70 hover:text-foreground hover:bg-foreground/10 transition-colors">
           <X className="w-6 h-6" />
         </motion.button>
-        <p className="text-sm font-medium text-foreground/70 uppercase tracking-wider">
-          In riproduzione
-        </p>
-        <motion.button
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          className="p-2 rounded-full text-foreground/70 hover:text-foreground hover:bg-foreground/10 transition-colors"
-        >
-          <MoreHorizontal className="w-6 h-6" />
-        </motion.button>
+        <p className="text-sm font-medium text-foreground/70 uppercase tracking-wider">In riproduzione</p>
+        <div className="flex items-center gap-1">
+          <motion.button onClick={() => setShowVisualizer(!showVisualizer)} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
+            className={`p-2 rounded-full transition-colors ${showVisualizer ? "text-primary bg-primary/10" : "text-foreground/70 hover:text-foreground hover:bg-foreground/10"}`}>
+            <BarChart3 className="w-6 h-6" />
+          </motion.button>
+          <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
+            className="p-2 rounded-full text-foreground/70 hover:text-foreground hover:bg-foreground/10 transition-colors">
+            <MoreHorizontal className="w-6 h-6" />
+          </motion.button>
+        </div>
       </div>
 
       {/* Content */}
       <div className="relative flex-1 flex flex-col items-center justify-center px-8 z-10">
-        {/* Album art */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentTrack.id}
-            initial={{ opacity: 0, scale: 0.8, rotateY: -15 }}
-            animate={{ opacity: 1, scale: 1, rotateY: 0 }}
-            exit={{ opacity: 0, scale: 0.8, rotateY: 15 }}
-            transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="relative"
-          >
-            <img
-              src={currentTrack.cover}
-              alt={currentTrack.album}
-              className="w-80 h-80 rounded-2xl object-cover shadow-2xl"
-            />
-            {isPlaying && (
-              <motion.div
-                className="absolute -inset-1 rounded-2xl glow-primary opacity-30"
-                animate={{ opacity: [0.2, 0.4, 0.2] }}
-                transition={{ duration: 3, repeat: Infinity }}
-              />
-            )}
+        {showVisualizer ? (
+          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="w-80 h-80 flex items-center justify-center">
+            <VisualizerCanvas isPlaying={isPlaying} />
           </motion.div>
-        </AnimatePresence>
+        ) : (
+          <AnimatePresence mode="wait">
+            <motion.div key={currentTrack.id}
+              initial={{ opacity: 0, scale: 0.8, rotateY: -15 }}
+              animate={{ opacity: 1, scale: 1, rotateY: 0 }}
+              exit={{ opacity: 0, scale: 0.8, rotateY: 15 }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="relative">
+              <img src={currentTrack.cover} alt={currentTrack.album} className="w-80 h-80 rounded-2xl object-cover shadow-2xl" />
+              {isPlaying && (
+                <motion.div className="absolute -inset-1 rounded-2xl glow-primary opacity-30"
+                  animate={{ opacity: [0.2, 0.4, 0.2] }} transition={{ duration: 3, repeat: Infinity }} />
+              )}
+            </motion.div>
+          </AnimatePresence>
+        )}
 
         {/* Track info */}
         <div className="mt-10 text-center w-full max-w-md">
           <div className="flex items-center justify-between">
             <div className="text-left min-w-0">
-              <motion.h2
-                key={currentTrack.title}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="text-2xl font-bold text-foreground truncate"
-              >
+              <motion.h2 key={currentTrack.title} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                className="text-2xl font-bold text-foreground truncate">
                 {currentTrack.title}
               </motion.h2>
               <p className="text-lg text-muted-foreground mt-1">{currentTrack.artist}</p>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              <motion.button
-                whileHover={{ scale: 1.2 }}
-                whileTap={{ scale: 0.8 }}
-                className="p-2 text-muted-foreground hover:text-primary transition-colors"
-              >
+              <motion.button whileHover={{ scale: 1.2 }} whileTap={{ scale: 0.8 }}
+                className="p-2 text-muted-foreground hover:text-primary transition-colors">
                 <Heart className="w-6 h-6" />
               </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.2 }}
-                whileTap={{ scale: 0.8 }}
-                className="p-2 text-muted-foreground hover:text-foreground transition-colors"
-              >
+              <motion.button whileHover={{ scale: 1.2 }} whileTap={{ scale: 0.8 }}
+                className="p-2 text-muted-foreground hover:text-foreground transition-colors">
                 <Share2 className="w-5 h-5" />
               </motion.button>
             </div>
@@ -140,20 +122,14 @@ export default function NowPlayingView(props: NowPlayingProps) {
               className={`p-2 ${shuffle ? "text-primary" : "text-muted-foreground hover:text-foreground"} transition-colors`}>
               <Shuffle className="w-5 h-5" />
             </motion.button>
-            <motion.button whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.9 }} onClick={prevTrack}
-              className="p-2 text-foreground">
+            <motion.button whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.9 }} onClick={prevTrack} className="p-2 text-foreground">
               <SkipBack className="w-6 h-6 fill-current" />
             </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              onClick={toggle}
-              className="w-16 h-16 rounded-full bg-foreground flex items-center justify-center shadow-xl"
-            >
+            <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={toggle}
+              className="w-16 h-16 rounded-full bg-foreground flex items-center justify-center shadow-xl">
               {isPlaying ? <Pause className="w-7 h-7 text-background" /> : <Play className="w-7 h-7 text-background ml-1" />}
             </motion.button>
-            <motion.button whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.9 }} onClick={nextTrack}
-              className="p-2 text-foreground">
+            <motion.button whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.9 }} onClick={nextTrack} className="p-2 text-foreground">
               <SkipForward className="w-6 h-6 fill-current" />
             </motion.button>
             <motion.button whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.9 }} onClick={toggleRepeat}
@@ -163,12 +139,8 @@ export default function NowPlayingView(props: NowPlayingProps) {
           </div>
 
           {/* AI Mood badge */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="mt-8 inline-flex items-center gap-2 px-4 py-2 rounded-full glass-surface"
-          >
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
+            className="mt-8 inline-flex items-center gap-2 px-4 py-2 rounded-full glass-surface">
             <Sparkles className="w-4 h-4 text-primary" />
             <span className="text-sm text-muted-foreground">
               Mood: <span className="text-foreground font-medium">Energetico</span> · {currentTrack.bpm} BPM
